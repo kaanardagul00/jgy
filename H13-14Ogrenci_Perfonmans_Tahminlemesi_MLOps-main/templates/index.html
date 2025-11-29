@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Öğrenci Performans Tahminlemesi - MLOps</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --dark-bg: #2c3e50;
+            --light-bg: #ecf0f1;
+            --text-dark: #2c3e50;
+            --text-light: #95a5a6;
+            --border-radius: 8px;
+            --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-dark);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            animation: slideDown 0.6s ease;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 25px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--light-bg);
+            padding-bottom: 15px;
+        }
+
+        .card-icon {
+            font-size: 2rem;
+            margin-right: 15px;
+            width: 50px;
+            height: 50px;
+            background: var(--light-bg);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .prediction-card {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .prediction-card .card-title {
+            color: white;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-dark);
+            font-size: 0.95rem;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="email"],
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--light-bg);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+            font-family: inherit;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        input[type="email"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: scale(1.02);
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: white;
+            margin-right: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #27ae60;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            background: var(--light-bg);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .result-container {
+            background: var(--light-bg);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin-top: 20px;
+            display: none;
+        }
+
+        .result-container.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        .result-success {
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .result-error {
+            border-left: 4px solid var(--danger-color);
+        }
+
+        .result-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .model-info {
+            background: var(--light-bg);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin-top: 15px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        .info-value {
+            color: var(--text-light);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--light-bg);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: rgba(46, 204, 113, 0.2);
+            color: var(--secondary-color);
+        }
+
+        .badge-info {
+            background: rgba(52, 152, 219, 0.2);
+            color: var(--primary-color);
+        }
+
+        footer {
+            text-align: center;
+            color: white;
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9rem;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-top: 15px;
+        }
+
+        .feature-list li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+            color: var(--text-light);
+        }
+
+        .feature-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--secondary-color);
+            font-weight: bold;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎓 Öğrenci Performans Tahminlemesi</h1>
+            <p>MLOps ile Desteklenen Akıllı Tahmin Sistemi</p>
+        </header>
+
+        <div class="main-grid">
+            <!-- Tahmin Kartı -->
+            <div class="card prediction-card">
+                <div class="card-header">
+                    <div class="card-icon">🔮</div>
+                    <div class="card-title">Performans Tahmini</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="studentName">👤 Öğrenci Adı</label>
+                    <input type="text" id="studentName" placeholder="Adı Soyadı" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="writingScore">✍️ Yazı Puanı</label>
+                    <input type="number" id="writingScore" placeholder="0" min="0" max="100" step="0.1" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="readingScore">📖 Okuma Puanı</label>
+                    <input type="number" id="readingScore" placeholder="0" min="0" max="100" step="0.1" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="gender">👥 Cinsiyet</label>
+                    <select id="gender" required>
+                        <option value="">Seçiniz...</option>
+                        <option value="male">Erkek</option>
+                        <option value="female">Kadın</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="raceEthnicity">🌍 Etnik Köken</label>
+                    <select id="raceEthnicity" required>
+                        <option value="">Seçiniz...</option>
+                        <option value="group A">Grup A</option>
+                        <option value="group B">Grup B</option>
+                        <option value="group C">Grup C</option>
+                        <option value="group D">Grup D</option>
+                        <option value="group E">Grup E</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="parentalEducation">🎓 Ebeveyn Eğitim Düzeyi</label>
+                    <select id="parentalEducation" required>
+                        <option value="">Seçiniz...</option>
+                        <option value="some high school">Lise Eğitimi (Eksik)</option>
+                        <option value="high school">Lise Mezunu</option>
+                        <option value="some college">Üniversite Eğitimi (Eksik)</option>
+                        <option value="associate's degree">Ön Lisans</option>
+                        <option value="bachelor's degree">Lisans</option>
+                        <option value="master's degree">Yüksek Lisans</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="lunch">🍱 Öğle Yemeği Tipi</label>
+                    <select id="lunch" required>
+                        <option value="">Seçiniz...</option>
+                        <option value="standard">Standart</option>
+                        <option value="free/reduced">Ücretsiz/İndirimli</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="testPrep">📚 Sınav Hazırlık Kursu</label>
+                    <select id="testPrep" required>
+                        <option value="">Seçiniz...</option>
+                        <option value="none">Yok</option>
+                        <option value="completed">Tamamlandı</option>
+                    </select>
+                </div>
+
+                <button class="btn-primary" onclick="makePrediction()">Tahmin Yap</button>
+
+                <div id="predictionResult" class="result-container">
+                    <div class="result-title">📈 Tahmin Sonucu</div>
+                    <div style="margin-top: 15px;">
+                        <div class="info-row">
+                            <span class="info-label">Tahmini Not:</span>
+                            <span class="info-value" id="resultScore">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Güven Düzeyi:</span>
+                            <span class="info-value" id="resultConfidence">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Durum:</span>
+                            <span class="info-value" id="resultStatus">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- İstatistikler Kartı -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">📊</div>
+                    <div class="card-title">Sistem İstatistikleri</div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">1000+</div>
+                        <div class="stat-label">Veri Kaydı</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">94%</div>
+                        <div class="stat-label">Doğruluk</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">4</div>
+                        <div class="stat-label">Özellik</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">v1.0</div>
+                        <div class="stat-label">Versiyon</div>
+                    </div>
+                </div>
+
+                <div class="model-info">
+                    <div class="info-row">
+                        <span class="info-label">Model:</span>
+                        <span class="info-value"><span class="badge badge-info">CatBoost</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Durum:</span>
+                        <span class="info-value"><span class="badge badge-success">Aktif</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Son Güncelleme:</span>
+                        <span class="info-value">29.11.2025</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Özellikler Kartı -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">⚙️</div>
+                    <div class="card-title">Sistem Özellikleri</div>
+                </div>
+
+                <ul class="feature-list">
+                    <li>Gerçek zamanlı performans tahmini</li>
+                    <li>Yüksek doğruluk oranı (94%)</li>
+                    <li>CatBoost algoritması</li>
+                    <li>MLOps ile entegrasyon</li>
+                    <li>Dinamik veri işleme</li>
+                    <li>Güvenli API endpoints</li>
+                </ul>
+            </div>
+        </div>
+
+        <footer>
+            <p>🏫 Öğrenci Performans Tahminlemesi Sistemi | Yapay Zeka & MLOps | 2025</p>
+        </footer>
+    </div>
+
+    <script>
+        // Sistem sağlık kontrolü
+        function checkSystemHealth() {
+            fetch('/api/health')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Sistem durumu:', data);
+                })
+                .catch(error => console.error('Hata:', error));
+        }
+
+        // Tahmin yapma fonksiyonu
+        async function makePrediction() {
+            const studentName = document.getElementById('studentName').value;
+            const writingScore = parseFloat(document.getElementById('writingScore').value);
+            const readingScore = parseFloat(document.getElementById('readingScore').value);
+            const gender = document.getElementById('gender').value;
+            const raceEthnicity = document.getElementById('raceEthnicity').value;
+            const parentalEducation = document.getElementById('parentalEducation').value;
+            const lunch = document.getElementById('lunch').value;
+            const testPrep = document.getElementById('testPrep').value;
+
+            // Validasyon
+            if (!studentName || !writingScore || !readingScore || !gender || !raceEthnicity || !parentalEducation || !lunch || !testPrep) {
+                alert('Lütfen tüm alanları doldurunuz!');
+                return;
+            }
+
+            // Tahmin isteği
+            try {
+                const response = await fetch('/api/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        student_name: studentName,
+                        writing_score: writingScore,
+                        reading_score: readingScore,
+                        gender: gender,
+                        race_ethnicity: raceEthnicity,
+                        parental_level_of_education: parentalEducation,
+                        lunch: lunch,
+                        test_preparation_course: testPrep
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    displayPredictionResult(data);
+                } else {
+                    alert('Tahmin yapılırken hata oluştu: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Hata:', error);
+                alert('Sunucuya bağlanılamadı!');
+            }
+        }
+
+        // Tahmin sonucunu görüntüle
+        function displayPredictionResult(data) {
+            const resultContainer = document.getElementById('predictionResult');
+            const score = data.score || (data.prediction * 100).toFixed(1);
+            const confidence = (data.confidence * 100).toFixed(1);
+            
+            let status = '❌ Başarısız';
+            if (data.prediction >= 70) {
+                status = '✅ Başarılı';
+            } else if (data.prediction >= 50) {
+                status = '⚠️ Orta';
+            }
+
+            document.getElementById('resultScore').textContent = score + ' / 100';
+            document.getElementById('resultConfidence').textContent = confidence + '%';
+            document.getElementById('resultStatus').textContent = status;
+
+            resultContainer.classList.add('show', 'result-success');
+        }
+
+        // Model bilgisini yükle
+        function loadModelInfo() {
+            fetch('/api/model-info')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Model bilgisi:', data.model);
+                })
+                .catch(error => console.error('Hata:', error));
+        }
+
+        // Sayfa yüklendiğinde
+        document.addEventListener('DOMContentLoaded', function() {
+            checkSystemHealth();
+            loadModelInfo();
+        });
+    </script>
+</body>
+</html>

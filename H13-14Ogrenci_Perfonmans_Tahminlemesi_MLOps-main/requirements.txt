@@ -1,0 +1,9 @@
+setuptools
+python-box
+ensure
+PyYAML
+joblib
+scikit-learn
+pickle4
+pandas
+catboost
